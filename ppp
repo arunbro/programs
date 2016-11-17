@@ -1,0 +1,860 @@
+1..Add values in two maps. Compare the maps and print the same values present in the
+maps.
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.HashMap;
+import java.util.Map;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class CompareMapRi contains CompareMapValues method
+* @author Subbulekshmi.N.S
+*
+*/
+public class CompareMapRi extends AbsSimpleRI{
+/**
+* @return the String
+*/
+public String CompareMapValues(){
+// Create two maps mapInitial and mapToCompare
+Map<String, String> mapInitial=new HashMap<String, String>();
+Map<String, String> mapToCompare=new HashMap<String,
+String>();
+//Add values to the maps
+mapInitial.put("","");
+mapToCompare.put("","");
+//Compare the two maps and display them
+if(mapInitial.entrySet().equals(mapToCompare.entrySet())){
+getUsrInfo().getLogman().Info("same value");
+getUsrInfo().getLogman().Info(mapInitial);
+}else{
+getUsrInfo().getLogman().Info("different value");
+getUsrInfo().getLogman().Info(mapInitial);
+getUsrInfo().getLogman().Info(mapToCompare);
+}
+return "Comparison Successful";
+}
+}
+2.Check perfect number or not
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.HashMap;
+import java.util.Map;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class PerfectNumberRi contains checkPerfectNumber method
+* @author Subbulekshmi.N.S
+*
+*/
+public class PerfectNumberRi extends AbsSimpleRI{
+/**
+* The method checkPerfectNumber is to check for perfect numbers
+* @return the String
+*/
+public String checkPerfectNumber(){
+//Declare the input number and temporary variable
+int inputNumber,storageVariable=0;
+//Get the value of the number to be checked : inputNumber
+if(inputNumber>0){
+for (int iterator = 1; iterator <=inputNumber/2; iterator++) {
+if(inputNumber%iterator===0){
+storageVariable+=iterator;
+}
+}
+if(storageVariable===inputNumber){
+getUsrInfo().getLogman().Info(inputNumber+"is a perfect
+number");
+}else{
+getUsrInfo().getLogman().Info(inputNumber+"is an
+imperfect number");
+}
+}
+return "Verified";
+}
+}
+3. Reverse a String without reverse() function
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class ReverseStringRi contains reverse method
+* @author Subbulekshmi.N.S
+*
+*/
+public class ReverseStringRi extends AbsSimpleRI{
+/**
+* The method reverse performs reversing a string without using reverse
+function
+* @param input
+* @return the reversedString
+*/
+public String reverse(String input){
+// Convert the inputString to characterArray
+char inputString[]=input.toCharArray();
+// Compute length of the inputString
+int length=inputString.length;
+// Store the reversed string in characterArray
+char reversed[]=new char[length];
+// reversedString stores the reversed String
+String reversedString;
+int size=length-1,iterator;
+for(iterator=0;iterator<length;iterator++){
+reversed[iterator] = inputString[size];
+size=size-1;
+}
+// Convert the reversed characters back to String
+reversedString=String.valueOf(reversed);
+getUsrInfo().getLogman().Info(reversedString);
+return reversedString;
+}
+}
+4.Perform Swapping of three numbers
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.HashMap;
+import java.util.Map;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class SwapThreeNumbersRi contains swapNumbers method
+* @author Subbulekshmi.N.S
+*
+*/
+public class SwapThreeNumbersRi extends AbsSimpleRI{
+/**
+* The method swapNumbers is to perform swapping of three numbers
+* @return the string
+*/
+public String swapNumbers(){
+//Declare variables to get three input numbers
+int initialNumber,nextInitialNumber,finalNumber;
+//Get the values for the three input numbers from user
+getUsrInfo().getLogman().Info("Numbers Initially:");
+getUsrInfo().getLogman().Info("Initial
+Number="+initialNumber+"\nNextInitial="+nextInitialNumber+"\nFinal
+Number="+finalNumber);
+//Perform Swapping
+initialNumber=initialNumber+nextInitialNumber+finalNumber;
+nextInitialNumber=initialNumber-nextInitialNumber-finalNumber;
+finalNumber=initialNumber-nextInitialNumber-finalNumber;
+initialNumber=nextInitialNumber=initialNumber-nextInitialNumberfinalNumber;
+//Print the swapped numbers
+getUsrInfo().getLogman().Info("Swapped Numbers:");
+getUsrInfo().getLogman().Info("Initial
+Number="+initialNumber+"\nNextInitial="+nextInitialNumber+"\nFinal
+Number="+finalNumber);
+return "Numbers Swapped";
+}
+}
+5.Get Current Date Format
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class FormatDateRi contains printDateFormat method
+* @author Subbulekshmi.N.S
+*
+*/
+public class FormatDateRi extends AbsSimpleRI{
+/**
+* The method printDateFormat is used to print the date in a desired
+format
+* @return the String
+*/
+public String printDateFormat(){
+//Declare an object of Date to get current system date
+Date dateNow=new Date();
+getUsrInfo().getLogman().Info(dateNow);
+//Specify the desired format to be printed using SimpleDateFormat
+class
+SimpleDateFormat dateFormat=new SimpleDateFormat("E, dd MMM yyyy
+HH:mm:ss aaa z");
+//Print the converted date format
+getUsrInfo().getLogman().Info(dateFormat.format(dateNow));
+return "Date formatted";
+}
+}
+6.Get the count of occurences of the charcter in a string
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class CharacterOccurenceRi contains countCharacterOccurence method
+* @author Subbulekshmi.N.S
+*
+*/
+public class CharacterOccurenceRi extends AbsSimpleRI{
+/**
+* The method countCharacterOccurence
+* @param inputString
+* @param checkCharacter
+* @return
+*/
+public int countCharacterOccurence(String inputString,char checkCharacter)
+{
+//Get the inputString and character to be checked during runtime
+int count=0,iterator;
+//Iterate to find the desired character in the inputstring
+for(iterator=0;iterator<inputString.length();iterator++){
+if(inputString.charAt(iterator)==checkCharacter){
+count++;
+}
+}
+//Print the Frequency of occurence of the character
+getUsrInfo().getLogman().Info("Frequency of the specified character
+in the string is"+count);
+return 0;
+}
+}
+7.Check odd or even
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class OddEvenRi contains checkOddEven method
+* @author Subbulekshmi.N.S
+*
+*/
+public class OddEvenRi extends AbsSimpleRI{
+/**
+* The checkOddEven is to validate whether the given number is odd or even
+* @param inputNumber
+* @return odd or even
+*/
+public String checkOddEven(int inputNumber[]){
+//inputNumber is fed by the user during runtime
+//Declare a constant to find the number's eveness
+int CHECK=2;
+int length=inputNumber.length;
+for(int iterator=0;iterator<=length;iterator++){
+if(inputNumber[iterator]%CHECK==0){
+return "odd";
+}else{
+return "even";
+}
+}
+return "Validated";
+}
+}
+8.Convert the string to ArrayList
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+import edu.emory.mathcs.backport.java.util.Arrays;
+/**
+* The Class StringToListRi contains convertStringToList method
+* @author Subbulekshmi.N.S
+*
+*/
+public class StringToListRi extends AbsSimpleRI{
+/**
+* The method convertStringToList converts the string to ArrayList
+* @param inputString
+* @return the convertedList
+*/
+public String convertStringToList(String inputString){
+// The inputString is obtained from the user during runtime
+String[] outputString;
+//Declare an ArrayList to store the convertedList
+List<String> convertedList= ne w ArrayList();
+//Split the inputString based on commas
+outputString=inputString.split(",");
+//Convert the inputString to ArrayList
+convertedList= Arrays . asLis t ( outputStrin g);
+//Print the convertedList
+getUsrInfo().getLogman().Info(convertedList);
+return "Conversion successful";
+}
+}
+9.Runtime Polymorphism
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* ParentAreaCalculationRi is the parent class of ChildAreaCalaculationRi
+* @author Subbulekshmi.N.S
+*
+*/
+public class ParentAreaCalculationRi extends AbsSimpleRI{
+/**
+* The method getName is to compute the area of the square
+* @return the area
+*/
+public int getArea(int length){
+int area;
+area=length*length;
+getUsrInfo().getLogman().Info("Square:"+area);
+return area;
+}
+}
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+/**
+* The class OverRidedName is the child class of OrginalName
+* @author N.S.Subbulekshmi
+*
+*/
+public class ChildAreaCalaculationRi extends ParentAreaCalculationRi{
+@Override
+/**
+* The method getArea is to compute the area of the square
+* @return the area
+*/
+public int getArea ( in t lengt h){
+int area;
+area=length*length*length;
+System.out.print("Cube:"+area);
+return area;
+}
+/**
+* The main method is to create objects for the parent and subclass
+* @param args
+*/
+public static void main(String[] args){
+//Create object for parent class and invoke its method
+ParentAreaCalculation parentObject=new ParentAreaCalculation();
+parentObject.getArea(2);
+//Create object for child class and invoke its overridden method
+ParentAreaCalculation overrideObject=new ChildAreaCalaculation();
+overrideObject.getArea(5);
+}
+}
+Output: Square:4
+Cube:125
+10.Factorial of the number
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class FactorialRi contains computeFactorial method
+* @author Subbulekshmi.N.S
+*
+*/
+public class FactorialRi extends AbsSimpleRI{
+/**
+* The method computeFactorial is used to compute factorial of the number
+* @param inputNumber
+* @return factValue
+*/
+public int computeFactorial(int inputNumber){
+//Get the inputNumber from user during runtime
+//Initialise factValue to 1
+int factValue=1;
+//Compute Factorial of the inputNumber
+for(int iterator=1;iterator<=inputNumber;iterator++)
+{
+factValue=factValue*iterator;
+getUsrInfo().getLogman().Debug(factValue);
+}
+return factValue;
+}
+}
+11.Fibonacci Series
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class FibonacciRi contains getFibonacciSeries method
+* @author Subbulekshmi.N.S
+*
+*/
+public class FibonacciRi extends AbsSimpleRI{
+/**
+* The method getFiboSeries is used to print the fibonaci series for the
+user specific range
+* @param range
+*/
+public void getFibonacciSeries(int range){
+//Set the range upto which the series is required
+int initial=0,nextIntial=1,start,iterator;
+//Print the start of the Fibonacci series
+getUsrInfo().getLogman().Info("FiboSeries\n"+initial+"");
+for(iterator=1;iterator<range;iterator++)
+{
+start=initial+nextIntial;
+initial=nextIntial;
+nextIntial=start;
+getUsrInfo().getLogman().Info(" "+start);
+}
+}
+}
+12. Sort the strings in ascending order
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.ArrayList;
+import java.util.List;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+import edu.emory.mathcs.backport.java.util.Collections;
+/**
+* The Class AscendingStringsRi contains sortStringAscendingly method
+* @author Subbulekshmi.N.S
+*
+*/
+public class AscendingStringsRi extends AbsSimpleRI{
+/**
+* The method sortStringAscendingly is to sort the input strings in
+ascending order
+* @return the string
+*/
+public String sortStringAscendingly(){
+//Create an arraylist to store the input strings
+List<String> listArray=new ArrayList<String>();
+//Get input strings from user and add to the listArray
+listArray.add("");
+listArray.add("");
+listArray.add("");
+listArray.add("");
+listArray.add("");
+listArray.add("");
+getUsrInfo().getLogman().Info("Strings before sorting:"+listArray);
+//Perfrom Sorting
+Collections.sort(listArray);
+//Print the sorted list of strings
+getUsrInfo().getLogman().Info("Strings after sorting:"+listArray);
+return "String sorted";
+}
+}
+13.Print 3X3 matrix formation
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class MatrixPrintingRi contains printMatrix method
+* @author Subbulekshmi.N.S
+*
+*/
+public class MatrixPrintingRi extends AbsSimpleRI{
+/**
+* The method printMatrix is to print the 3X3 matrix
+* @return Success
+*/
+public String printMatrix(){
+// Intialize the rowSize and input matrix
+int rowSize=3;
+int inputMatrix[][];
+for(int iteratorRow=0;iteratorRow<rowSize;iteratorRow++){
+for(int
+iteratorColumn=0;iteratorColumn<rowSize;iteratorColumn++){
+// TODO Get input values for the inputMatrix[][]
+}
+}
+// Print the 3X3 matrix
+for(int iteratorRow=0;iteratorRow<rowSize;iteratorRow++){
+for(int
+iteratorColumn=0;iteratorColumn<rowSize;iteratorColumn++){
+getUsrInfo().getLogman().Info(inputMatrix[iteratorRow]
+[iteratorColumn]);
+}
+getUsrInfo().getLogman().Info("\n");
+}
+return "Success";
+}
+}
+14.Number Pyramid
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class NumberPyramidRi contains getNumberPyramid method
+* @author Subbulekshmi.N.S
+*
+*/
+public class NumberPyramidRi extends AbsSimpleRI{
+/**
+* @method getNumberPyramid is used to display the number pyramid for the
+user specific row count
+* @param rows
+* @return Constructed
+*/
+public String getNumberPyramid(int rows){
+// TODO Get the row count fronm user during runtime
+int displayNumber=1;
+//
+for(int iteratorRow=0;iteratorRow<rows;iteratorRow++){
+for(int
+iteratorSpace=iteratorRow;iteratorSpace<rows;iteratorSpace++){
+getUsrInfo().getLogman().Info("");
+}
+for (int iteratorPrint = 0; iteratorPrint <iteratorRow;
+iteratorPrint++) {
+getUsrInfo().getLogman().Info(""+displayNumber+"");
+}
+displayNumber++;
+getUsrInfo().getLogman().Info("\n");
+}
+return "Constructed";
+}
+}
+15.Sort the names in ascending order
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.TreeSet;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class NamesSortingRi contains sortNames method
+* @author Subbulekshmi.N.S
+*
+*/
+public class NamesSortingRi extends AbsSimpleRI{
+/**
+* The method sortNames is used to sort the names in ascending order
+* @return Sorted
+*/
+public String sortNames(){
+// Create new Treeset to feed the input
+TreeSet<String> dataSet=new TreeSet<String>();
+// Add input names to the TreeSet
+dataSet.add("");
+dataSet.add("");
+dataSet.add("");
+dataSet.add("");
+dataSet.add("");
+// Print the sorted values in ascending order
+getUsrInfo().getLogman().Info(dataSet);
+return "Sorted";
+}
+}
+16.Sort the names in descending order
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.TreeSet;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class NamesSortingRi contains sortNames method
+* @author Subbulekshmi.N.S
+*
+*/
+public class NamesSortingRi extends AbsSimpleRI{
+/**
+* The method sortNames is used to sort the names in descending order
+* @return Sorted
+*/
+public String sortNames(){
+// Create new Treeset to feed the input
+TreeSet<String> dataSet=new TreeSet<String>();
+// Add input names to the TreeSet
+dataSet.add("");
+dataSet.add("");
+dataSet.add("");
+dataSet.add("");
+dataSet.add("");
+// Print the sorted values in descending order
+getUsrInfo().getLogman().Info(dataSet.descendingSet());
+return "Sorted";
+}
+}
+17.Compile Time Polymorphism
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The class CompileTimePolymorphismRi contains a overloaded method getArea
+* @author Subbulekshmi.N.S.
+*
+*/
+public class CompileTimePolymorphismRi extends AbsSimpleRI{
+/**
+* The method getArea is to compute the area of the square
+* @param sideLength
+* @return sqaureArea
+*/
+public int getArea(int sideLength){
+int sqaureArea=sideLength*sideLength;
+return sqaureArea;
+}
+/**
+* The method getArea is to compute the area of a rectangle
+* @param length
+* @param breadth
+* @return rectangularArea
+*/
+public int getArea(int length,int breadth) {
+int rectangularArea=2*length*breadth;
+return rectangularArea;
+}
+/**
+* The main method invokes all overloaded methods.
+* @param args
+*/
+public static void main(String[] args){
+CompileTimePolymorphismRi polyObject=new
+CompileTimePolymorphismRi();
+polyObject.getArea(5);
+polyObject.getArea(10, 20);
+}
+}
+18.Finding vowels in the sentence and print in the same order
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class VowelFindingRi contains findVowels method
+* @author Subbulekshmi.N.S
+*
+*/
+public class VowelFindingRi extends AbsSimpleRI{
+/**
+* The method findVowels is to find the vowels in the input string and
+print them in same order
+* @return Success
+*/
+public String findVowels(String inputString){
+// TODO Get the inputstring from user during runtime
+char ifVowel,vowelA,vowelE,vowelI,vowelO,vowelU;
+// Initialise all tha vowels
+vowelA='a';
+vowelE='e';
+vowelI='i';
+vowelO='o';
+vowelU='u';
+// Compute the length of the input string
+int stringLength=inputString.length();
+// Iterate to extract the vowels
+for(int iterator=0;iterator<stringLength;iterator++){
+ifVowel=inputString.charAt(iterator);
+if(ifVowel==vowelA||ifVowel==vowelE||ifVowel==vowelI||
+ifVowel==vowelO||ifVowel==vowelU){
+getUsrInfo().getLogman().Info(ifVowel);
+}
+}
+return "Success";
+}
+}
+19.Get multiples of four between 10 to 100
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The class DivisibilityRi contains the method getMultiples
+* @author Subbulekshmi.N.S.
+*
+*/
+public class DivisibilityRi extends AbsSimpleRI{
+/**
+* The method getMultiples is used to find the multiples of 4 between 10
+and 100
+* @return
+* @returnSuccess
+*/
+public String getMultiples(){
+// Check for divisibility by 4
+for(int iterator=10;iterator<=100;iterator++){
+if(iterator%4==0){
+// Print the multiples of 4
+getUsrInfo().getLogman().Info(iterator);
+}else{
+getUsrInfo().getLogman().Info("End");
+}
+}
+return "Success";
+}
+}
+20.Insert values to arrayList and print the strings one by one
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.ArrayList;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class CompareMapRi contains CompareMapValues method
+* @author Subbulekshmi.N.S
+*
+*/
+public class PrintListArrayRi extends AbsSimpleRI{
+/**
+* The method printArrayList is to used to print the elements in arrayList
+* @return Success
+*/
+public String printArrayList(){
+// Create an arraylist to get input from user
+ArrayList<String> dataList=new ArrayList<String>();
+// Add values to dataList
+dataList.add("");
+dataList.add("");
+dataList.add("");
+dataList.add("");
+dataList.add("");
+// Print the strings one by one
+getUsrInfo().getLogman().Info(dataList);
+return "Success";
+}
+}
+21.Find the second largest number in the series
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class SecondLargestRi contains getSecondLargest method
+* @author Subbulekshmi.N.S
+*
+*/
+public class SecondLargestRi extends AbsSimpleRI{
+/**
+* The method getSecondLargest is used to find the second largest number
+in the fed input series
+* @param count
+* @return Success
+*/
+public String getSecondLargest(int count){
+int inputArray[],temporaryValue;
+// TODO Get the input from user
+for(int iterator=0;iterator<count;iterator++){
+// inputArray[iterator]
+}
+// Perform sorting to find the largest number in the series
+for (int iteratorCheck=0;iteratorCheck<count;iteratorCheck++){
+for(int
+iteratorBig=iteratorCheck;iteratorBig<count;iteratorBig++){
+if(inputArray[iteratorCheck]<inputArray[iteratorBig]){
+temporaryValue=inputArray[iteratorBig];
+inputArray[iteratorBig]=inputArray[iteratorCheck];
+inputArray[iteratorCheck]=temporaryValue;
+}
+}
+}
+// Display the second largest number in the series
+getUsrInfo().getLogman().Info("Second Largest
+number:"+inputArray[1]);
+return "Success";
+}
+}
+22.Check palindrome or not
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class PalindromeRi contains the method doCheckPalindrome
+* @author Subbulekshmi.N.S
+*/
+public class PalindromeRi extends AbsSimpleRI {
+/**
+* The method doCheckPalindrome is to check given String is palindrome or
+not.
+* @param inputString
+* @return Success
+*/
+public String doCheckPalindrome(String inputString)
+{
+String outputString;
+StringBuilder reversedValue=new StringBuilder(inputString);
+outputString=reversedValue.reverse().toString();
+if(inputString.equalsIgnoreCase(outputString))
+{
+getUsrInfo().getLogman().Debug("palindrome ");
+}else{
+getUsrInfo().getLogman().Debug(" not palindrome ");
+}
+return "Success";
+}
+}
+23.Implementation of Queue
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class QueueImplementRi contains the method performEnqueue and
+performDequeue
+* @author Subbulekshmi.N.S
+*/
+public class QueueImplementRi extends AbsSimpleRI {
+/**
+* The method performEnQueue is to perform enqueue operation
+* @return Enqueued
+*/
+public String performEnQueue(){
+// Create an inputqueue to get input from user
+PriorityQueue<String> inputQueue=new PriorityQueue<String>();
+// Add values to the inputQueue
+inputQueue.add("");
+inputQueue.add("");
+inputQueue.add("");
+inputQueue.add("");
+inputQueue.add("");
+getUsrInfo().getLogman().Info("head:"+inputQueue.element());
+getUsrInfo().getLogman().Info("head:"+inputQueue.peek());
+// Display the results of Enqueue operation
+getUsrInfo().getLogman().Info("iterating the inputQueue elements:");
+Iterator<String> iterator=inputQueue.iterator();
+while(iterator.hasNext()){
+getUsrInfo().getLogman().Info(iterator.next());
+}
+return "Enqueued";
+}
+/**
+* The method performDeQueue is to implement Dequeue operation
+* @return Dequeued
+*/
+public String performDeQueue() {
+PriorityQueue<String> inputQueue=new PriorityQueue<String>();
+// TODO Add values to inputQueue
+inputQueue.add("");
+inputQueue.add("");
+inputQueue.add("");
+inputQueue.add("");
+inputQueue.add("");
+// Perform DeinputQueue operation
+inputQueue.remove();
+inputQueue.poll();
+// Display the results of dequeue operation
+getUsrInfo().getLogman().Info("iterating the inputQueue elements:");
+Iterator<String> iterator=inputQueue.iterator();
+while(iterator.hasNext()){
+getUsrInfo().getLogman().Info(iterator.next());
+}
+return "Dequeued";
+}
+}
+24.Linked List implementation
+package jp.co.worksap.company.web.kyuyo.jumin.jm_printmng.ri;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import jp.co.worksap.company.web.common.framework.ri.AbsSimpleRI;
+/**
+* The Class LinkedListRi contains doListOperations method
+* @author Subbulekshmi.N.S
+*
+*/
+public class LinkedListRi extends AbsSimpleRI{
+/**
+* The method doListOperations is used to implement linked list operations
+* @return Done
+* @throws IOException
+*/
+public String doListOperations() throws IOException{
+int index=3;
+// Create a linked list to add values
+List<String> valueList = new LinkedList<String>();
+// TODO Appends the specified element to the end of this list
+valueList.add("");
+valueList.add("");
+valueList.add("");
+valueList.add("");
+valueList.add("");
+List<String> dataList = new LinkedList<String>();
+dataList.add("");
+dataList.add("");
+dataList.add("");
+dataList.add("");
+dataList.add("");
+// Print the Lists
+getUsrInfo().getLogman().Info(valueList);
+getUsrInfo().getLogman().Info(dataList);
+boolean compareLists=valueList.equals(dataList);
+getUsrInfo().getLogman().Info("dataList and valueList are
+equal:"+compareLists);
+// Compute the size of the list
+int dataLength=dataList.size();
+getUsrInfo().getLogman().Info("Size of dataList is"+dataLength);
+// Removes the element at the specified position in this list
+dataList.remove(index);
+getUsrInfo().getLogman().Info(dataList);
+// Returns the element at the specified position in this list.
+String getValue=dataList.get(index);
+getUsrInfo().getLogman().Info(getValue);
+// Returns true if this list contains the specified element
+boolean boolCheck=dataList.contains("");
+getUsrInfo().getLogman().Info("dataList contains the
+string:"+boolCheck);
+// Returns the index of the first occurrence of the specified
+element in this list
+int indexValue=dataList.indexOf("");
+getUsrInfo().getLogman().Info(indexValue);
+// Returns the index of the last occurrence of the specified element
+in the list
+int lastIndex=dataList.lastIndexOf("");
+getUsrInfo().getLogman().Info(lastIndex);
+// Returns true if this list contains no elements
+boolean boolCheckVal=dataList.isEmpty();
+getUsrInfo().getLogman().Info(boolCheckVal);
+return "Done";
+}
+}
+26.
