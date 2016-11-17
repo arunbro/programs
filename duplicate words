@@ -1,0 +1,10 @@
+public static void main(String[] args) {
+
+		String text = "I N F O V I E W T E C H N O L O G I E S";
+		List<String> list = Arrays.asList(text.split(" "));
+System.out.print(list);
+		Set<String> uniqueWords = new HashSet<String>(list);
+		for (String word : uniqueWords) {
+			System.out.println(word + ": " + Collections.frequency(list, word));
+		}
+	}
