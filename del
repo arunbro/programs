@@ -1,0 +1,1912 @@
+// @@ <<修正履歴>>
+// @@ 修正日付   BugNo   修正者     対応Version   内容
+// @@--------------------------------------------------------------------------------
+// @@ 2007/01/12 49460   M.Kudo     v6.1          マルチ対応
+// @@ 2007/11/13         nozaki     v6.2          バージョンダイアログ表示
+// @@ 2008/08/27         inagaki    v6.2          モードラベル対応
+// @@ 2009/01/26         山下       v6.2          マルチoffの時、起動時に不要なダイアログ出現
+// @@--------------------------------------------------------------------------------
+{************************************************************************
+ 業務名  : 原資
+ Module名: gns_kmkname
+ Unit名  : kmknameList
+ Form名  : kmknameList
+ 作成者  : sj_gao       作成日付: 2005年7月1日
+ 機能概要: 原資項目名称メンテナンス画面
+ 修正履歴:
+ ************************************************************************}
+unit kmknameList;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, GfwRoot, GfwBase, ComCtrls, ActnList, WAActionList, Menus,
+  WAMenu, ImgList, WAToolBar, ToolWin, WADB, DB, ExtCtrls, WAPanel,
+  WAStatusBar, StdCtrls, WAComboBoxBase, WAComboBox, WAEdit,
+  kmkCommon, cpny_modl, WALabel, cpny_core, StrUtils, Grids,
+  WAGrid, GfwCommon, WAButton, gns_common, csbcmodl, DBAccessSplashForm
+  ,cpny_sec,cssmodl, WAKaisyaCombo;
+
+type
+
+  TfrmKmknameList = class(TGfwBaseForm)
+    tbtn_save: TToolButton;
+    tbtn_edt: TToolButton;
+    tbtn_ref: TToolButton;
+    pnl_top: TWAPanel;
+    mnu_save: TMenuItem;
+    mnu_upd: TMenuItem;
+    mnu_ref: TMenuItem;
+    mnu_div1: TMenuItem;
+    tbdiv1: TToolButton;
+    tbdiv2: TToolButton;
+    tbdiv4: TToolButton;
+    tbdiv6: TToolButton;
+    tbdiv7: TToolButton;
+    grdMain: TWAFixGrid;
+    cbGenshiKB: TWAComboBox;
+    lblGenshiKB: TWALabel;
+    tbtn_load: TToolButton;
+    mnu_load: TMenuItem;
+    lblTableNM: TWALabel;
+    cbTableNm: TWAComboBox;
+    dbAccessSpFrm: TDBAccessSplashForm;
+    pnlKai: TWAPanel;
+    pnkKaisyalbl: TWALabel;
+    mcbkaisya: TWAKaisyaCombo;
+    Mode_Lbl: TWALabel;
+    procedure actSaveExecute(Sender: TObject);
+    procedure actReferExecute(Sender: TObject);
+    procedure actUpdateExecute(Sender: TObject);
+    procedure actSaveUpdate(Sender: TObject);
+    procedure actUpdateUpdate(Sender: TObject);
+    procedure actReferUpdate(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure grdMainSelectCell(Sender: TObject; ACol, ARow: Integer;
+      var CanSelect: Boolean);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
+    procedure cbGenshiKBChange(Sender: TObject);
+    procedure cbTableNmChange(Sender: TObject);
+    procedure ScrollGrid;
+    procedure grdMainExit(Sender: TObject);
+    procedure ActLoadExecute(Sender: TObject);
+    procedure mcbkaisyaChange(Sender: TObject);
+
+  private
+    { Private 宣言 }
+    OldRow    : Integer;
+    OldCol    : Integer;
+    tmCurrent : TTreatMode;
+    showFlag  : Integer;
+    cur_contr_record : GenshiContrStrct;
+    procedure SetMode(mode : TTreatMode);
+    procedure InitGenshiCombox();
+    procedure LoadKmknameDataToGrid();
+    procedure freshKmknameDataToGrid();
+    procedure bakKmknameDataList();
+    procedure saveRecordFromGrid();
+    procedure showStatusBar;
+    procedure setGridRow(srow: Integer; curRcrd: GenshiKmknameStrct);
+    function KmknameCheck(newRow, newCol: Integer): Boolean;
+
+  public
+    { Public 宣言 }
+  end;
+
+var
+  frmKmknameList: TfrmKmknameList;
+
+const
+  COL_TABLE   = 0;
+  COL_KMKID   = 1;
+  COL_KMKNM   = 2;
+
+resourcestring
+  LBL_TBL_GSCTR = '原資コントロール';
+  LBL_TBL_GSSSK = '原資所属集計テーブル';
+  LBL_TBL_GSKJM = '原資個人マスタ';
+  LBL_TBL_GSKJS = '原資個人集計テーブル';
+
+  ERR_MSG01     = '会社情報の取得に失敗しました。';
+
+implementation
+
+{$R *.dfm}
+
+{*****************************************************************************
+* 手続き名、関数名: actSaveExecute
+* 機能概要        : 画面保存イベント、新規或修正或削除したデータをDBへ保存。
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.actSaveExecute(Sender: TObject);
+var
+  i      : Integer;
+  retval : Integer;
+begin
+
+  // 編集結果を保存する
+  saveRecordFromGrid;
+
+  // 画面チェックする
+  if KmknameCheck(1, 1) = False then
+  begin
+    grdMain.SetFocus;
+    Exit;
+  end;
+
+  // 確認メッセージ
+  retval  := WAMessageDlg(MSG_SAV, [''], mtConfirmation, [mbYes, mbCancel],mbYes);
+  if retval = mrCancel then
+  begin
+    Exit;
+  end;
+
+  //splashフォームを表示
+  ShowSplashForm(screen, dbAccessSpFrm, SP_MSG_SAVEING);
+
+  // DBへ更新する
+  try
+
+    Company.SDB.IsAutoCommit := False;
+
+    for i := 0 to dataLen-1 do
+    begin
+      if (crKmknameDataList[i].ctrlFlg <> CONTRL_UPD) then
+        continue;
+
+      if updateKmkname(crKmknameDataList[i].KmknameRcrd) = False then
+      begin
+        Company.SDB.Rollback;
+        Company.SDB.IsAutoCommit := True;
+        HideSplash(screen, dbAccessSpFrm);
+        WAMessageDlg(MSG_SAV_ERROR, [''], mtError, [mbYes], mbYes);
+        Exit;
+      end;
+    end;
+    Company.SDB.Commit;
+    Company.SDB.IsAutoCommit := True;
+  except
+    HideSplash(screen, dbAccessSpFrm);
+    WAMessageDlg(MSG_SAV_ERROR, [''], mtError, [mbYes], mbYes);
+    Exit;
+  end;
+
+  // ローカルデータも更新する
+  if loadKmknameDBToLocalList(cur_contr_record.genshi_kb) = False then
+  begin
+    HideSplash(screen, dbAccessSpFrm);
+    WAMessageDlg(MSG_SH_ERROR, ['GENSHI_KMKNAME'], mtError, [mbYes], mbYes);
+    Exit;
+  end;
+  HideSplash(screen, dbAccessSpFrm);
+
+  //データをバックアップ
+  bakKmknameDataList;
+
+  //グリッドで表示する
+  freshKmknameDataToGrid;
+
+  setMode(tmView);
+  grdMain.setFocus;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: actReferExecute
+* 機能概要        : レコードを参照します
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.actReferExecute(Sender: TObject);
+var
+  retval : Integer;
+begin
+
+  // 変更があれば、変更を廃止かどうかを確認
+  if (actSave.Enabled = True) then
+  begin
+    retval := WAMessageDlg(MSG_EXT_BEF_SAV, [''], mtConfirmation, [mbYes, mbCancel], mbCancel);
+    if retval = mrCancel then
+    begin
+      Exit;
+    end;
+  end;
+
+  //
+  SetMode(tmView);
+
+  //データをバックアップ
+  bakKmknameDataList;
+
+  //グリッドで表示する
+  freshKmknameDataToGrid;
+
+  SetMode(tmView);
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:　SetMode
+* 機能概要        :　画面モード（新規、修正、照会、削除）を設定
+* 引数            :  mode : TTreatMode
+* 戻り値          :
+* 修正履歴
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.SetMode(mode : TTreatMode);
+var
+  bakShowFlag : Integer;
+begin
+
+  bakShowFlag := showflag;
+  if (mode = tmView) then
+  begin
+    //grdMain.ViewOnly := True;
+    grdMain.Options := grdmain.Options + [goRowSelect];
+  end
+  else if (mode = tmEdit) then
+  begin
+    //grdMain.ViewOnly := False;
+    grdMain.Options := grdmain.Options - [goRowSelect];
+  end;
+
+  tmCurrent := mode;
+  Mode_Lbl.Caption := SetDispMode(mode);  //2008/08/27
+
+  showflag := bakShowFlag;
+  showStatusBar;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: actSaveUpdate
+* 機能概要        : ボタン「保存」の状態を判断関数
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.actSaveUpdate(Sender: TObject);
+var
+  i, row : Integer;
+
+begin
+
+  // データがない場合
+  if (dataLen = 0) and (tmCurrent = tmView) then
+  begin
+    actSave.Enabled := False;
+    Exit;
+  end;
+
+  saveRecordFromGrid;
+  row := grdMain.Row;
+
+  if CompareKmknameData(crKmknameDataList[row-1], dbKmknameDataList[row-1]) = False then
+  begin
+    crKmknameDataList[row-1].ctrlFlg := CONTRL_UPD;
+    actSave.Enabled := True;
+    Exit;
+  end
+  else
+  begin
+    crKmknameDataList[row-1].ctrlFlg := '';
+  end;
+
+  // その他のレコードが変更かどうか判断
+  for i := 0 to dataLen-1 do
+  begin
+    if (crKmknameDataList[i].ctrlFlg = CONTRL_UPD) then
+    begin
+      actSave.Enabled := True;
+      Exit;
+    end;
+  end;
+
+  actSave.Enabled := False;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: FormCreate
+* 機能概要        : 画面生成イベント
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.FormCreate(Sender: TObject);
+var
+  comboStr : string;
+begin
+  inherited;
+  showFlag := 0;
+
+  // 2007/01/12 M.Kudo マルチ  >>>>>>>
+  if GlbUseMulti then
+  begin
+    mcbkaisya.LoadMultiKb := 1;
+    mcbkaisya.ItemIndex   := -1;
+
+    if not mcbkaisya.LoadData() then
+    begin
+      MessageDlg(ERR_MSG01, mtError, [mbOK], 0);
+      Exit;
+    end;
+
+    mcbkaisyaChange(Sender);
+    pnlKai.Visible := True;
+  end
+  else begin
+    pnlKai.Visible := False;
+
+    if loadContrDBToLocalList(mcbkaisya.GetCurrentItemID) = False then
+    begin
+      WAMessageDlg(MSG_SH_ERROR, ['GENSHI_CONTR'], mtError, [mbYes], mbYes);
+    end;
+  end;
+  // 2007/01/12 M.Kudo マルチ  <<<<<<<
+
+  comboStr := '4,0,0,' + LBL_TBL_GSCTR
+               + ',1,' + LBL_TBL_GSSSK
+               + ',2,' + LBL_TBL_GSKJM
+               + ',3,' + LBL_TBL_GSKJS;
+  cbTableNm.INIString := comboStr;
+  cbTableNm.Loaded;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: FormShow
+* 機能概要        :  画面表示イベント
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.FormShow(Sender: TObject);
+var
+  cm : TCssModeSecInfos;
+begin
+  cm := css_GetExecutablemodes(GlbCurUserid,'gns_kmkname' );
+  if  (cm = []) then
+  begin
+    Application.Terminate;
+    Exit;
+  end;
+
+  if CssModeQuery  in cm then
+  begin
+  end else
+  begin
+    Application.Terminate;
+    Exit;
+  end;
+
+  if cssModeUpdate in cm then
+  begin
+    tbtn_edt.Visible   := True;
+    ActUpdate.Visible  := True;
+  end else
+  begin
+    tbtn_edt.Visible   := False;
+    ActUpdate.Visible  := False;
+    ActUpdate.ShortCut := 0;
+  end;
+
+  if Assigned_Company() then
+  begin
+    term_id := company.TERM;
+  end;
+  if Assigned_g_User() then
+  begin
+    user_id := gUser.Id ;
+  end;
+
+  showFlag := 1;
+  InitGenshiCombox;
+  setMode(tmView);
+
+  if contrLen > 1 then
+  begin
+    OldRow := 1;
+    OldCol := 0;
+    grdMain.Row := 1;
+    grdMain.Col := 0;
+  end
+  else
+  begin
+    cur_contr_record := crcontrList[0];
+  end;
+//2009/01/26 山下 マルチoff時、画面起動時に不要なダイアログが出現する不具合を修正>>
+  showFlag := 1;
+//2009/01/26 山下 マルチoff時、画面起動時に不要なダイアログが出現する不具合を修正<<
+  ActLoadExecute(Sender);
+  showFlag := 2;
+
+  showStatusBar;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: InitGenshiCombox
+* 機能概要        : 原資区分コンボボックスを初期化
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.InitGenshiCombox();
+var
+  i : Integer;
+  ini_str : String;
+  def_idx : Integer;
+  def_gns : String;
+begin
+
+  def_idx := 1;
+  def_gns := ParamStr(1);
+
+  if contrLen = 1 then
+  begin
+    ini_str := '1,0,0, ';
+  end
+  else
+  begin
+    for i := 1 to contrLen-1 do
+    begin
+      ini_str := ini_str
+        + ',' + VarToStr(i)
+        + ',' + crcontrList[i].genshi_kb_nm;
+      if def_gns = crcontrList[i].genshi_kb then
+        def_idx := i;
+    end;
+    ini_str := IntToStr(contrLen-1) + ','
+               + VarToStr(def_idx) + ini_str;
+  end;
+  cbGenshiKB.INIString := ini_str;
+  cbGenshiKB.Loaded;
+
+  cbGenshiKBChange(cbGenshiKB);
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: LoadKmknameDataToGrid
+* 機能概要        : 原資項目名称データをグリッドにロードする
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.LoadKmknameDataToGrid();
+var
+  i : Integer;
+begin
+
+  with grdMain do
+  begin
+
+    showFlag := 1;
+    ClearAllData;
+    WARowCount := dataLen;
+    showFlag := 2;
+
+    for i := 0 to dataLen-1 do
+    begin
+      setGridRow(i+1, dbKmknameDataList[i].KmknameRcrd);
+    end;
+    WAColumn[COL_TABLE].ViewOnly := True;
+    WAColumn[COL_KMKID].ViewOnly := True;
+    WAColumn[COL_KMKNM].ViewOnly := False;
+    //WAColumn[COL_KMKNM_2].ViewOnly := False;
+
+    OldRow := 1;
+    Row := 1;
+    OldCol := 0;
+    Col := 0;
+
+  end;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: freshKmknameDataToGrid
+* 機能概要        : 原資項目名称データをグリッドにロードする
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.freshKmknameDataToGrid();
+var
+  i : Integer;
+begin
+
+  with grdMain do
+  begin
+
+    showFlag := 1;
+    WARowCount := dataLen;
+    showFlag := 2;
+
+    for i := 0 to dataLen-1 do
+    begin
+      setGridRow(i+1, dbKmknameDataList[i].KmknameRcrd);
+    end;
+    WAColumn[COL_TABLE].ViewOnly := True;
+    WAColumn[COL_KMKID].ViewOnly := True;
+    WAColumn[COL_KMKNM].ViewOnly := False;
+    //WAColumn[COL_KMKNM_2].ViewOnly := False;
+
+    OldCol := 0;
+    Col := 0;
+  end;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: bakKmknameDataList
+* 機能概要        : 検索結果をバックアップする
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.bakKmknameDataList();
+var
+  i : Integer;
+  tmpNoteData  : TKmknameNodeData;
+begin
+
+  SetLength(crKmknameDataList, dataLen);
+
+  for i := 0 to dataLen-1 do
+  begin
+    tmpNoteData := TKmknameNodeData.Create;
+    CopyKmknameData(dbKmknameDataList[i], tmpNoteData);
+    crKmknameDataList[i] := tmpNoteData;
+  end;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: grdMainSelectCell
+* 機能概要        : グリッドセールの選択イベント
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.grdMainSelectCell(Sender: TObject; ACol,
+  ARow: Integer; var CanSelect: Boolean);
+begin
+  inherited;
+  // 画面初期表示時、処理しない
+  if showFlag < 2 then Exit;
+  if (OldRow = ARow) and (OldCol = ACol) then Exit;
+  if (dataLen = 0) and (tmCurrent = tmView) then Exit;
+
+  if not KmknameCheck(ARow, ACol) then
+  begin
+    CanSelect := False;
+    Exit;
+  end;
+
+  OldRow := ARow;
+  OldCol := ACol;
+  CanSelect := True;
+  showStatusBar;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: saveRecordFromGrid
+* 機能概要        : 編集した内容をレコードに保存します
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.saveRecordFromGrid();
+var
+  row    : integer;
+begin
+  row    := grdMain.Row;
+  with crKmknameDataList[row-1] do
+  begin
+    KmknameRcrd.genshi_item_nm      := grdMain.GetData(COL_KMKNM, grdMain.ViewToDataRow(row));
+    //KmknameRcrd.genshi_item_nm_lng2 := grdMain.GetData(COL_KMKNM_2, grdMain.ViewToDataRow(row));
+  end;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: actUpdateExecute
+* 機能概要        : レコードを修正します。改修可能。
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.actUpdateExecute(Sender: TObject);
+var
+  retval : Integer;
+begin
+
+  // 変更があれば、変更を廃止かどうかを確認
+  if (actSave.Enabled = True) then
+  begin
+    retval := WAMessageDlg(MSG_EXT_BEF_SAV, [''], mtConfirmation, [mbYes, mbCancel], mbCancel);
+    if retval = mrCancel then
+    begin
+      Exit;
+    end;
+  end;
+
+  //データをバックアップ
+  bakKmknameDataList;
+
+  //グリッドで表示する
+  freshKmknameDataToGrid;
+
+  SetMode(tmEdit);
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: actUpdateUpdate
+* 機能概要        : 修正ボタンの状態を判断の手続き
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.actUpdateUpdate(Sender: TObject);
+begin
+
+  if (tmCurrent = tmEdit) then
+    actUpdate.Enabled := False
+  else if (dataLen > 0) then
+    actUpdate.Enabled := True
+  else
+    actUpdate.Enabled := False;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: actReferUpdate
+* 機能概要        : 照会ボタン状態を判断の手続き
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.actReferUpdate(Sender: TObject);
+begin
+
+  if (tmCurrent = tmView) then
+    actRefer.Enabled := False
+  else
+    actRefer.Enabled := True;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名: FormClose
+* 機能概要        : 画面クローズイベント
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.FormClose(Sender: TObject;
+  var Action: TCloseAction);
+var
+  retval : Integer;
+begin
+  inherited;
+  // 変更があれば、変更を廃止かどうかを確認
+  if actSave.Enabled = True then
+  begin
+    retval := WAMessageDlg(MSG_CLOSE_BEF_SAV, [''], mtConfirmation, [mbYes, mbCancel], mbCancel);
+    if retval = mrCancel then
+    begin
+      Action := caNone;
+      Exit;
+    end;
+  end
+  else
+  begin
+    retval := WAMessageDlg(MSG_EXT, [''], mtConfirmation, [mbYes, mbCancel], mbCancel);
+    if retval = mrNo then
+    begin
+      Action := caNone;
+      Exit;
+    end;
+  end;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  showStatusBar
+* 機能概要        :  ステータスバー情報を表示
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.showStatusBar;
+begin
+
+  baseStsbar.MsgLeft   := '';
+  baseStsbar.MsgMiddle := '';
+  if tmCurrent = tmAdd then
+    baseStsbar.MsgMiddle := STS_TSUIKA
+  else if tmCurrent = tmEdit then
+    baseStsbar.MsgMiddle := STS_SYUUSEI
+  else if tmCurrent = tmView then
+    baseStsbar.MsgMiddle := STS_SYOUKAI
+  else if tmCurrent = tmDel then
+    baseStsbar.MsgMiddle := STS_DELETE;
+
+  baseStsbar.MsgRigth := '';
+  if (dataLen < 1) then
+    baseStsbar.MsgRigth := '0' + STS_KENSUU
+  else if grdMain.RowCount > 1 then
+  begin
+    if OldRow > 0 then
+      baseStsbar.MsgRigth := varToStr(OldRow)
+              + '/'
+              + VarToStr(grdMain.RowCount-1)
+              + STS_KENSUU;
+  end;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  setGridRow
+* 機能概要        :  レコードをグリッドに表示する
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.setGridRow(srow: Integer; curRcrd: GenshiKmknameStrct);
+begin
+  with grdMain do
+  begin
+    if (myStrToInt64(curRcrd.genshi_item_id) < 2000) then
+      SetData(COL_TABLE, ViewToDataRow(srow), LBL_TBL_GSCTR)
+    else if (myStrToInt64(curRcrd.genshi_item_id) < 3000) then
+      SetData(COL_TABLE, ViewToDataRow(srow), LBL_TBL_GSSSK)
+    else if (myStrToInt64(curRcrd.genshi_item_id) < 4000) then
+      SetData(COL_TABLE, ViewToDataRow(srow), LBL_TBL_GSKJM)
+    else
+      SetData(COL_TABLE, ViewToDataRow(srow), LBL_TBL_GSKJS);
+
+    SetData(COL_KMKID, ViewToDataRow(srow), curRcrd.genshi_item_id);
+    SetData(COL_KMKNM, ViewToDataRow(srow), curRcrd.genshi_item_nm);
+    //SetData(COL_KMKNM_2, ViewToDataRow(srow), curRcrd.genshi_item_nm_lng2);
+  end;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  KmknameCheck
+* 機能概要        :  レコードをチェックするする
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+function TfrmKmknameList.KmknameCheck(newRow, newCol: Integer): Boolean;
+var
+  kmknameStr : String;
+begin
+
+  baseStsbar.MsgLeft := '';
+
+  if grdMain.col <> COL_KMKNM then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  // 最大長さ：５０（NVARCHAR）
+  kmknameStr := grdMain.GetCell(COL_KMKNM, grdMain.Row);
+  if WALength(kmknameStr) > 50 then
+  begin
+    baseStsbar.MsgLeft := WAGetMessage(MSG_OVER_INPUT, [grdMain.WAColumn[COL_KMKNM].Caption]);
+    grdMain.SetFocus;
+    Result := False;
+    Exit;
+  end;
+
+  Result := True;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  FormKeyPress
+* 機能概要        :  Enterキーを押したら、Tabと同じ作用
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.FormKeyPress(Sender: TObject; var Key: Char);
+begin
+  if (key = #13) and (ActiveControl <> grdMain) then
+  begin
+    SelectNext(ActiveControl,True,True);
+    key := #0;
+  end;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  actloadExecute
+* 機能概要        :  DBから原資項目名称リストを取得して、表示する
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.ActLoadExecute(Sender: TObject);
+var
+  retval   : Integer;
+begin
+
+  // 変更を廃止かどうかを確認
+  if (actSave.Enabled = True) and (showFlag = 2) then
+  begin
+    retval := WAMessageDlg(MSG_EXT_BEF_SAV, [''],
+      mtConfirmation, [mbYes, mbCancel], mbCancel);
+    if retval = mrCancel then
+    begin
+      Exit;
+    end;
+  end;
+
+  // 原資項目ＩＤデータ検索
+  SetMode(tmView);
+
+  //splashフォームを表示
+  ShowSplashForm(screen, dbAccessSpFrm, SP_MSG_READING);
+
+  if loadKmknameDBToLocalList(cur_contr_record.genshi_kb) = False then
+  begin
+    HideSplash(screen, dbAccessSpFrm);
+    WAMessageDlg(MSG_SH_ERROR, ['GENSHI_KMKNAME'], mtError, [mbYes], mbYes);
+    Exit;
+  end;
+  HideSplash(screen, dbAccessSpFrm);
+
+  //データをバックアップ
+  bakKmknameDataList;
+
+  //グリッドで表示する
+  LoadKmknameDataToGrid;
+
+  // ステータスバー
+  showStatusBar;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  cbGenshiKBChange
+* 機能概要        :  原資区分を選択すると、自動的に項目名称をロードする
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.cbGenshiKBChange(Sender: TObject);
+var
+  j      : Integer;
+  selIdx : Integer;
+  retval : Integer;
+begin
+  inherited;
+  //
+  selIdx := cbGenshiKB.GetCurrentItemID;
+  if crcontrList[selIdx].genshi_kb = cur_contr_record.genshi_kb then
+    Exit;
+
+  // 変更を廃止かどうかのを確認
+  if (Sender = cbGenshiKB) and (actSave.Enabled = True) and (showFlag = 2) then
+  begin
+    retval := WAMessageDlg(MSG_EXT_BEF_SAV, [''],
+      mtConfirmation, [mbYes, mbCancel], mbCancel);
+    if retval = mrCancel then
+    begin
+      for j := 0 to contrLen-1 do
+      begin
+        if crcontrList[j].genshi_kb = cur_contr_record.genshi_kb then
+        begin
+          cbGenshiKB.SetItem(j);
+          break;
+        end;
+      end;
+      Exit;
+    end;
+  end;
+
+  cur_contr_record := crcontrList[selIdx];
+
+  // データを検索する
+  if  (Sender = cbGenshiKB)
+  and (showFlag <> 0) then
+  begin
+    showFlag := 1;
+    ActLoadExecute(Sender);
+    setMode(tmView);
+    grdMain.setFocus;
+  end;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  cbTableNmChange
+* 機能概要        :  テーブルコンボを変更したら、表示内容を変わる
+* 引数            :
+* 戻り値          :  なし
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.cbTableNmChange(Sender: TObject);
+begin
+  inherited;
+  if grdMain.RowCount <= 2 then exit; 
+  ScrollGrid;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名:  ScrollGrid
+* 機能概要        :  選択されたテーブルによって、そのテーブルの項目を表示する
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.ScrollGrid;
+var
+  tableIndex : Integer;
+  rowIndex   : Integer;
+begin
+  rowIndex := 0;
+  tableIndex := cbTableNm.GetCurrentItemID;
+
+  case tableIndex of
+    0: rowIndex := 0;
+    1: rowIndex := 75;
+    2: rowIndex := 167;
+    3: rowIndex := 257;
+  end;
+  {
+  grdMain.Row := 1;
+  grdMain.Row := rowIndex - 3 + grdMain.Height div grdMain.DefaultRowHeight;
+  grdMain.SetWARowSelected(rowIndex, true);
+  }
+  grdMain.Row := grdMain.WARowCount-1;
+  grdMain.Row := rowIndex + grdMain.FixedRows;
+  grdMain.SetWARowSelected(rowIndex, true);
+
+end;
+
+
+{*****************************************************************************
+* 手続き名、関数名:  grdMainExit
+* 機能概要        :  グリッドからフォーカス移動時、画面チェックを行う
+* 引数            :
+* 戻り値          :
+* 修正履歴        :
+*  No    修正日    修正者        修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure TfrmKmknameList.grdMainExit(Sender: TObject);
+begin
+  inherited;
+
+  if KmknameCheck(1, 1) = False then
+  begin
+    grdMain.SetFocus;
+  end;
+
+end;
+
+
+// 2007/01/11 M.Kudo マルチ  >>>>>>>
+procedure TfrmKmknameList.mcbkaisyaChange(Sender: TObject);
+begin
+  inherited;
+
+  if loadContrDBToLocalList(mcbkaisya.GetCurrentItemID) = False then
+  begin
+    WAMessageDlg(MSG_SH_ERROR, ['GENSHI_CONTR'], mtError, [mbYes], mbYes);
+  end;
+
+  InitGenshiCombox();
+end;
+// 2007/01/11 M.Kudo マルチ  <<<<<<<
+
+
+initialization
+  //COMPANY共通初期処理
+  if not cpny_Initialize('gns_kmkname') then
+  begin
+    Application.ShowMainForm := False;  // メインウィンドウを表示しない。
+    PostQuitMessage(0);                 // アプリケーションを終了する。
+  end;
+
+//defult 終了処理
+finalization
+  //COMPANY共通終了処理
+  cpny_Finalize;
+
+end.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// @@ <<修正履歴>>
+// @@ 修正日付   BugNo   修正者     対応Version   内容
+// @@--------------------------------------------------------------------------------
+// @@ 2007/01/12 49460   M.Kudo     v6.1          マルチ対応
+// @@ 2008/07/24         inagaki    v6.2          マルチSQL修正
+// @@ 2008/07/25         inagaki    v6.2           order by 追加
+// @@ 2009/04/06 100599  山下       v6.2           DB2環境では保存処理できない不具合
+// @@--------------------------------------------------------------------------------
+unit kmkCommon;
+
+interface
+
+uses SQLMODL, WADB, DB, Forms, StdCtrls, Variants, SysUtils, Dialogs, Classes,
+     cpny_modl, cpny_core, gns_common, cssmodl;
+
+type
+
+  // 原資コントロールテーブルレコード
+  GenshiContrStrct = Record
+    genshi_kb : string;            //原資区分
+    genshi_kb_nm : string;         //原資区分名称
+  end;
+
+  // 原資項目名称組合情報
+  TKmknameNodeData = class
+    KmknameRcrd : GenshiKmknameStrct;    // 原資項目名称
+    ctrlFlg  : String;                   // 修正、削除など
+    gridIdex : Integer;                  // グリッド中順位
+  end;
+
+const
+  CONTRL_NON = '-1';
+  CONTRL_UPD = '0';
+  CONTRL_NEW = '1';
+  CONTRL_DEL = '2';
+
+var
+  dataLen    : Integer;
+  dbKmknameDataList : Array of TKmknameNodeData;
+  crKmknameDataList : Array of TKmknameNodeData;
+  contrLen   : Integer;
+  crcontrList  : Array of GenshiContrStrct;
+  function loadContrDBToLocalList(ps_kaiCd: String): Boolean;
+  function loadKmknameDBToLocalList(genshi_kb : string): Boolean;
+  procedure ClearGenshiKmknameStrct(var curRcrd: GenshiKmknameStrct);
+  procedure ClearKmknameData(var kjData : TKmknameNodeData; cur_contr_record : GenshiContrStrct);
+  procedure CopyGenshiKmknameStrct(srcRcrd: GenshiKmknameStrct; var dstRcrd: GenshiKmknameStrct);
+  procedure CopyKmknameData(srcData: TKmknameNodeData; var dstData: TKmknameNodeData);
+  function CompareGenshiKmknameStrct(gensiRcrdA, gensiRcrdB: GenshiKmknameStrct): Boolean;
+  function CompareKmknameData(kjDataA, kjDataB: TKmknameNodeData): Boolean;
+  function updateKmkname(KmknameRcrd: GenshiKmknameStrct): Boolean;
+
+implementation
+
+{*****************************************************************************
+* 手続き名、関数名    : loadContrDBToLocalList
+* 機能概要            : 原資コントロール情報をDBから読込む
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+function loadContrDBToLocalList(ps_kaiCd: String): Boolean;
+var
+  i : Integer;
+  selSQL: String;
+
+begin
+
+  Result := False;
+  contrLen := 1;
+  SetLength(crcontrList, contrLen);
+
+  selSQL := 'SELECT '
+          + ' a.genshi_kb ,'
+          + ' a.genshi_kb_nm '
+          + ' FROM GENSHI_CONTR a';
+
+  // 2007/01/12 M.Kudo マルチ  >>>>>>>
+  if GlbUseMulti then
+    {
+    selSQL := selSQL + ', paykbn p'
+            + ' WHERE a.kyuyo_kb = p.kyuyo_kb '
+            + ' AND p.pay_kb = 0'
+            + ' AND p.kai_cd = ' + QuotedStr(ps_kaiCd);
+    } //2008/07/24
+    selSQL := selSQL
+            + ' WHERE a.kai_cd = ' + QuotedStr(ps_kaiCd);
+
+  // 2007/01/12 M.Kudo マルチ  <<<<<<<
+
+  selSQL := selSQL
+          + ' ORDER BY a.genshi_kb ';
+  try
+    Company.SDB.Open(selSQL);
+  except
+    Exit;
+  end;
+  COMPANY.SDB.commit;
+
+  contrLen := COMPANY.SDB.Res.RowCount+1;
+  SetLength(crcontrList, contrLen);
+
+  with crcontrList[0] do
+  begin
+    genshi_kb         := '';
+    genshi_kb_nm      := '';
+  end;
+
+  for i := 1 to contrLen-1 do
+  begin
+    with crcontrList[i] do
+    begin
+      genshi_kb         := Company.SDB.Res.GetValueAsString(0,i-1);
+      genshi_kb_nm      := Company.SDB.Res.GetValueAsString(1,i-1);
+    end;
+  end;
+  Result := True;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : loadKmknameDBToLocalList
+* 機能概要            : 原資項目名称情報をDBから読込む
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+function loadKmknameDBToLocalList(genshi_kb : string): Boolean;
+var
+  i : Integer;
+  selSQL: String;
+  tmpData : TKmknameNodeData;
+begin
+
+  Result := False;
+  dataLen := 0;
+  SetLength(dbKmknameDataList, dataLen);
+
+  if (genshi_kb = '') then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  selSQL := 'SELECT '
+          + ' b.genshi_kb, '
+          + ' b.genshi_item_id, '
+          + ' b.genshi_item_nm, '
+          //+ ' b.genshi_item_nm_lng2, '
+          + ' b.create_user_id, '
+          + ' b.create_term_id, '
+          + ' b.create_date, '
+          + ' b.prc_user_id, '
+          + ' b.prc_term_id, '
+          + ' b.prc_date '
+          + ' FROM GENSHI_KMKNAME b '
+          + ' WHERE b.genshi_kb = ' + AnsiQuotedStr(genshi_kb, '''')
+          + ' ORDER BY b.genshi_item_id';           //2008/07/25 add
+
+  try
+    Company.SDB.Open(selSQL);
+  except
+    Exit;
+  end;
+  COMPANY.SDB.commit;
+
+  dataLen := COMPANY.SDB.Res.RowCount;
+  SetLength(dbKmknameDataList, dataLen);
+
+  for i := 0 to  dataLen-1 do
+  begin
+    tmpData := TKmknameNodeData.create;
+    with tmpData.KmknameRcrd do
+    begin
+      genshi_kb           := Company.SDB.Res.GetValueAsString(0, i);
+      genshi_item_id      := Company.SDB.Res.GetValueAsString(1, i);
+      genshi_item_nm      := Company.SDB.Res.GetValueAsString(2, i);
+      //genshi_item_nm_lng2 := Company.SDB.Res.GetValueAsString(3, i);
+      create_user_id      := Company.SDB.Res.GetValueAsString(3, i);
+      create_term_id      := Company.SDB.Res.GetValueAsString(4, i);
+      create_date         := Company.SDB.Res.GetValueAsString(5, i);
+      prc_user_id         := Company.SDB.Res.GetValueAsString(6, i);
+      prc_term_id         := Company.SDB.Res.GetValueAsString(7, i);
+      prc_date            := Company.SDB.Res.GetValueAsString(8, i);
+    end;
+
+    dbKmknameDataList[i] := tmpData;
+    dbKmknameDataList[i].ctrlFlg := '';
+  end;
+
+  Result := True;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : ClearGenshiKmknameStrct
+* 機能概要            : 原資項目名称情報をクリアする（新規場合と同じ）
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure  ClearGenshiKmknameStrct(var curRcrd: GenshiKmknameStrct);
+begin
+
+  curRcrd.genshi_kb           := '';
+  curRcrd.genshi_item_id      := '';
+  curRcrd.genshi_item_nm      := '';
+  //curRcrd.genshi_item_nm_lng2 := '';
+  curRcrd.create_user_id      := '';
+  curRcrd.create_term_id      := '';
+  curRcrd.create_date         := '';
+  curRcrd.prc_user_id         := '';
+  curRcrd.prc_term_id         := '';
+  curRcrd.prc_date            := '';
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : ClearKmknameData
+* 機能概要            : 原資項目名称情報をクリアする（新規場合と同じ）
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure  ClearKmknameData(var kjData : TKmknameNodeData; cur_contr_record : GenshiContrStrct);
+begin
+  ClearGenshiKmknameStrct(kjData.KmknameRcrd);
+  kjData.ctrlFlg := '';
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : CopyGenshiKmknameStrct
+* 機能概要            : 原資項目名称情報を複製する
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure  CopyGenshiKmknameStrct(srcRcrd: GenshiKmknameStrct; var dstRcrd: GenshiKmknameStrct);
+begin
+  dstRcrd.genshi_kb           := srcRcrd.genshi_kb;
+  dstRcrd.genshi_item_id      := srcRcrd.genshi_item_id;
+  dstRcrd.genshi_item_nm      := srcRcrd.genshi_item_nm;
+  //dstRcrd.genshi_item_nm_lng2 := srcRcrd.genshi_item_nm_lng2;
+  dstRcrd.create_user_id      := srcRcrd.create_user_id;
+  dstRcrd.create_term_id      := srcRcrd.create_term_id;
+  dstRcrd.create_date         := srcRcrd.create_date;
+  dstRcrd.prc_user_id         := srcRcrd.prc_user_id;
+  dstRcrd.prc_term_id         := srcRcrd.prc_term_id;
+  dstRcrd.prc_date            := srcRcrd.prc_date;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : CopyKmknameData
+* 機能概要            : 原資項目名称情報を複製する
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+procedure  CopyKmknameData(srcData: TKmknameNodeData; var dstData: TKmknameNodeData);
+begin
+  CopyGenshiKmknameStrct(srcData.KmknameRcrd, dstData.KmknameRcrd);
+  dstData.ctrlFlg   := srcData.ctrlFlg;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : CompareGenshiKmknameStrct
+* 機能概要            : 二つ原資項目名称情報を対比
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+function  CompareGenshiKmknameStrct(gensiRcrdA, gensiRcrdB: GenshiKmknameStrct): Boolean;
+begin
+  Result := False;
+  
+  //if (Trim(gensiRcrdA.genshi_item_nm)       = Trim(gensiRcrdB.genshi_item_nm)) and
+  //   (Trim(gensiRcrdA.genshi_item_nm_lng2)  = Trim(gensiRcrdB.genshi_item_nm_lng2)) then
+  if (Trim(gensiRcrdA.genshi_item_nm)       = Trim(gensiRcrdB.genshi_item_nm))  then
+    Result := True;
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : CompareKmknameData
+* 機能概要            : 二つ原資項目名称組合情報を対比
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+function  CompareKmknameData(kjDataA, kjDataB: TKmknameNodeData): Boolean;
+begin
+  Result := True;
+
+  if CompareGenshiKmknameStrct(kjDataA.KmknameRcrd, kjDataB.KmknameRcrd) = False then
+  begin
+    Result := False;
+    Exit;
+  end;
+
+end;
+
+{*****************************************************************************
+* 手続き名、関数名    : updateKmkname
+* 機能概要            : DBに原資項目名称データを更新
+* 引数                :
+* 戻り値              :
+* 修正履歴            :
+*  No     修正日      修正者              修正内容
+* 番号    YYYY/MM/DD  修正者（会社名）    内容
+******************************************************************************}
+function updateKmkname(KmknameRcrd: GenshiKmknameStrct): Boolean;
+var
+  UPDATE_KMKNAME_SQL : string;
+begin
+
+  Result := False;
+  UPDATE_KMKNAME_SQL :=
+       'UPDATE GENSHI_KMKNAME SET ' +
+           'genshi_item_nm = ' + AnsiQuotedStr(KmknameRcrd.genshi_item_nm, '''') + ', ' +
+       //  'genshi_item_nm_lng2 = ' + AnsiQuotedStr(KmknameRcrd.genshi_item_nm_lng2, '''') + ', ' +
+           'prc_user_id = ' + AnsiQuotedStr(user_id, '''') + ', ' +
+           'prc_term_id = ' + AnsiQuotedStr(term_id, '''') + ', ' +
+           'prc_date = sysdate ' +
+       'WHERE genshi_kb = ' + AnsiQuotedStr(KmknameRcrd.genshi_kb, '''') +
+//2009/04/06 yamashita 数値型に''を付けるとdb2では異常終了>>
+       //' AND genshi_item_id = ' + AnsiQuotedStr(KmknameRcrd.genshi_item_id,'''');
+       ' AND genshi_item_id = ' + KmknameRcrd.genshi_item_id ;
+//2009/04/06 yamashita 数値型に''を付けるとdb2では異常終了<<
+
+  if company.SDB.Exec(UPDATE_KMKNAME_SQL) <> -1 then
+    Result := True;
+end;
+
+
+end.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  DELPHI ANALYSIS
+
+		         [単身赴任手当] 認定済情報 明細
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+S.No
+NAME
+EVENT
+LOGIC(FROM DELPHI, USAGE)
+1
+FormCreate
+OnCreate
+1.Check the condition if GlbUseMulti then set mcbkaisya.LoadMultiKb to 1 and mcbkaisya.ItemIndex to -1.
+
+2.If mcbkaisya.LoadData() does not load a data then message dialog should open with a error message.
+
+3.If it loads a data then set pnlkai.Visible to True,else set to false so it will no be visible.
+
+4.For the function loadContrDBToLocalList execute query 1.
+
+5.If   loadContrDBToLocalList is false then warning message dialog should be opened.       
+
+
+2
+FormShow
+OnShow
+1.Get the mode select value in variable cm.
+
+2.Check if cm equal to null or not,if equals then Terminates application.
+
+3.Check if CssModeQuery is in cm ,if satisfied then application should terminate.
+
+4.If  mode is set to update mode then set toolbutton edit to visible and update action to visible,else set both to false.
+
+3
+FormClose
+
+1.Check if actsave.Enabled = True then confirmation message dialog should be opened with a Yes and Cancel option.
+
+2.If cancel is selected then Exit.
+
+3.Window will be closed. 
+4
+actSaveExecute
+
+1.This function is to save record from the Grid.
+
+2.Check for if KmknameCheck(1,1) equal to false then set focus to grid main and Exit
+
+3.Then open confirmation message dialog,if cancel is clicked exit the dialog.
+
+  
+5
+actReferExecute
+
+1.This function is used for refer action.
+
+2.Check if actSave.Enabled equal to True then confirmation message dialog is opened.
+
+3.If cancel is pressed close the dialog or mode is set to view.
+6
+ActSaveUpdate
+
+1.Check if datalength equal to zero and mode is tmView then Set actSave.Enabled to false.
+
+2.save record from grid and set row  equal to grdMain.Row
+
+3.Check if CompareKmknameData is equal to false then set control flag to CONTRL_UPD and set actSave.Enabled to True.
+
+4.If not equal then set control flag to null.
+
+5.Intialise for loop with a  range from zero to dataLen – 1.
+
+6.Check if control flag equal to CONTRL_UPD then set actSave.Enabled to True then Exit else set actSave.Enabled to False.
+7
+SetMode
+
+1.Intialise a variable bakShowFlag as a Integer and set bakShowFlag to showflag.
+
+2.Check if mode equal to tmView then set grdMain.Options equal to grdmain.Options + [goRowSelect].
+
+3.Else check if mode equal to tmEdit then set set grdMain.Options equal to grdmain.Options – [goRowSelect].
+
+4.Get the mode in a tmCurrent and display the corresponding mode label in SetDispMode(mode).
+
+5.Show the status in a status bar using flag.
+
+8
+InitGenshiCombox
+
+
+9
+LoadKmknameDataToGrid
+
+
+10
+freshKmknameDataToGrid
+
+1.Intialise a variable i as a integer and begin gridMain do.
+
+2.Set showflag equal to one ,get dataLen from WARowCount then set showflag to two.
+
+3.Intialise for loop with a range from zero to dataLen-1,then set grid row with a data from a KmknameRcrd.
+
+4.Then set viewonly condtion for COL_TABLE AND COL_KMKID to true and COL_KMKNM to false.
+
+5.set OldCol and Col to zero.
+11
+bakKmknameDataList
+
+
+12
+grdMainSelectCell
+
+
+13
+saveRecordFromGrid
+
+1.This function used to store data from Grid.
+
+2.Intialise the varaible row as a integer.
+
+3.Get a number of rows from the grid using grdMain.Row.
+
+4.Get the data from grid using GetData method with a corresponding row value.
+14
+actUpdateExecute
+
+1.This function is to perform update opertaion.
+
+2.Check if actSave.Enabled is equal to True then a confrimation message dialog should be opened.
+
+3.When cancel is clicked then dialog should be closed and exit.
+
+4.When yes is clicked bakKmknameDataList and freshkmknameDataToGrid should be executed .
+
+5.Then set mode to tmEdit.
+15
+actUpdateUpdate
+
+1.Check for the condition if tmCurrent equal to tmEdit then set actUpdate.Enabled to False.
+
+2.If not equal then check dataLen is greater than zero or not then set actUpdate.Enabled to True.
+
+3.If not set actUpdate.Enabled to False.
+16
+actReferUpdate
+
+1.Check if tmCurrent equal to tmView or not.
+
+2.If equal means then set actRefer.Enabled to false.
+
+3.If not means set actRefer.Enabled to true.
+17
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+						
+					SQL QUERIES
+1
+query1
+SELECT 
+      a.genshi_kb
+      a.genshi_kb_nm 
+
+FROM 
+      GENSHI_CONTR a
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
